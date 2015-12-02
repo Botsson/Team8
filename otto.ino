@@ -10,6 +10,7 @@ ZumoMotors motors;
 Pushbutton button(ZUMO_BUTTON);
 
 int lastError = 0;
+int stopped = 0;
 
 const int MAX_SPEED = 400;
 const int CALIBRATION_SPEED = 150;
@@ -25,14 +26,12 @@ const char rhapsody[] PROGMEM = "O6 T40 L16 d#<b<f#<d#<f#<bd#f#"
 
 void setup() {
   button.waitForButton();
-  buzzer.playFromProgramSpace(rhapsody);
-  pinMode(13, OUTPUT);
-  
-  
+  // buzzer.playFromProgramSpace(rhapsody);
+  // pinMode(13, OUTPUT);
+  // buzzer.play("O6 T40 L16 >a2>a2>a2>>f2>c3>a2>f2>c3>a2");
   reflectanceSensors.init();
   motors.setSpeeds(0,0);
   Serial.begin(9600);
-
   motors.setSpeeds(CALIBRATION_SPEED, -CALIBRATION_SPEED);  
   for (int i = 0; i < 90; i++) {  
     reflectanceSensors.calibrate();
@@ -43,14 +42,31 @@ void setup() {
 void loop() {
   unsigned int sensors[6];
   int position = reflectanceSensors.readLine(sensors);
+  int error = position - 2500;
+  int speedDifference = error / 4 + 6 * (error - lastError);
+  lastError = error;
+  int m1Speed = MAX_SPEED + speedDifference;
+  int m2Speed = MAX_SPEED - speedDifference;
+  if (m1Speed < 0)
+    m1Speed = 0;
+  if (m2Speed < 0)
+    m2Speed = 0;
+  if (m1Speed > MAX_SPEED)
+    m1Speed = MAX_SPEED;
+  if (m2Speed > MAX_SPEED)
+    m2Speed = MAX_SPEED;
+
+  
 
   if (onLine(sensors)) {
-    digitalWrite(13, HIGH);
-    followLine();
-  } else {
-    digitalWrite(13, LOW);
-    motors.setSpeeds(0, 0);
+    // digitalWrite(13, HIGH);
+    followLine(m1Speed, m2Speed);
+    stopped = 0;
+  } else if (stopped > 0) {
+    stopped++;
     goStraight();
+  } else {
+    motors.setSpeeds(0, 0);
   }
   
 
@@ -64,18 +80,14 @@ void loop() {
   }
   */
   
-  
-  int error = position - 2500;
-  
-  // motors.setSpeeds(m1Speed, m2Speed);
 }
 
 void goStraight() {
   motors.setSpeeds(MAX_SPEED, MAX_SPEED);
 }
 
-void followLine() {
-  
+void followLine(int m1Speed, int m2Speed) {
+  motors.setSpeeds(m1Speed, m2Speed);
 }
 
 bool onLine(unsigned int sensors[])  {
