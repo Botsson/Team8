@@ -11,7 +11,8 @@ Pushbutton button(ZUMO_BUTTON);
 
 int lastError = 0;
 
-const int MAX_SPEED = 100;
+const int MAX_SPEED = 400;
+const int CALIBRATION_SPEED = 150;
 
 void setup() {
   reflectanceSensors.init();
@@ -19,12 +20,10 @@ void setup() {
   motors.setSpeeds(0,0);
   Serial.begin(9600);
 
-  motors.setSpeeds(MAX_SPEED, -MAX_SPEED);
+  motors.setSpeeds(CALIBRATION_SPEED, -CALIBRATION_SPEED);
   
-  
-  for (int i = 0; i < 360; i++) {  
+  for (int i = 0; i < 90; i++) {  
     reflectanceSensors.calibrate();
-    delay(12);
   }
   motors.setSpeeds(0, 0);
 }
@@ -32,5 +31,5 @@ void setup() {
 void loop() {
   unsigned int sensors[6];
   int position = reflectanceSensors.readLine(sensors);
-  Serial.println(String(position));
+  Serial.println(String(sensors[0]));
 }
